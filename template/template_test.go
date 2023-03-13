@@ -15,8 +15,8 @@ type TestObj struct {
 
 func TestGen(t *testing.T) {
 	type args struct {
-		t    any
-		wont any
+		t    interface{}
+		wont interface{}
 	}
 	tests := []struct {
 		name string

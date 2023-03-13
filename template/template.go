@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-func Gen(t any) (result any) {
+func Gen(t interface{}) (result interface{}) {
 	rt := reflect.TypeOf(t)
 	switch rt.Kind() {
 	case reflect.Struct:
@@ -13,7 +13,7 @@ func Gen(t any) (result any) {
 		rSlice := reflect.MakeSlice(rt, 1, 1)
 		rSlice.Index(0).Set(newValue(rSlice.Index(0).Interface(), rSlice.Index(0)))
 		result = rSlice.Interface()
-	case reflect.Pointer:
+	case reflect.Ptr:
 		result = newValue(t, reflect.ValueOf(&t).Elem()).Interface()
 	}
 	return result
@@ -22,7 +22,7 @@ func Gen(t any) (result any) {
 func newValue(obj interface{}, rv reflect.Value) reflect.Value {
 	rt := reflect.TypeOf(obj)
 	switch rt.Kind() {
-	case reflect.Pointer:
+	case reflect.Ptr:
 		switch rt.Elem().Kind() {
 		case reflect.Struct:
 			return newValue(reflect.Indirect(reflect.New(rt.Elem())).Interface(), reflect.ValueOf(rv))
