@@ -5,27 +5,16 @@ import (
 )
 
 func Gen(t interface{}) (result interface{}) {
-	rt := reflect.TypeOf(t)
-	switch rt.Kind() {
-	case reflect.Struct:
-		result = newValue(t, reflect.ValueOf(rt)).Interface()
-	case reflect.Slice:
-		rSlice := reflect.MakeSlice(rt, 1, 1)
-		rSlice.Index(0).Set(newValue(rSlice.Index(0).Interface(), rSlice.Index(0)))
-		result = rSlice.Interface()
-	case reflect.Ptr:
-		result = newValue(t, reflect.ValueOf(&t).Elem()).Interface()
-	}
-	return result
+	return newValue(t).Interface()
 }
 
-func newValue(obj interface{}, rv reflect.Value) reflect.Value {
+func newValue(obj interface{}) reflect.Value {
 	rt := reflect.TypeOf(obj)
 	switch rt.Kind() {
 	case reflect.Ptr:
 		switch rt.Elem().Kind() {
 		case reflect.Struct:
-			return newValue(reflect.Indirect(reflect.New(rt.Elem())).Interface(), reflect.ValueOf(rv))
+			return newValue(reflect.Indirect(reflect.New(rt.Elem())).Interface())
 		default:
 			return reflect.New(rt.Elem())
 		}
@@ -34,12 +23,17 @@ func newValue(obj interface{}, rv reflect.Value) reflect.Value {
 		newRV := reflect.ValueOf(newObj)
 		elem := newRV.Elem()
 		for index := 0; index < elem.NumField(); index++ {
-			field := elem.Field(index)
-			field.Set(newValue(field.Interface(), field))
+			if field := elem.Field(index); field.CanSet() {
+				field.Set(newValue(field.Interface()))
+			}
 		}
 		return elem
 	case reflect.Interface:
-		return newValue(obj, reflect.ValueOf(rv))
+		return newValue(obj)
+	case reflect.Slice:
+		rSlice := reflect.MakeSlice(rt, 1, 1)
+		rSlice.Index(0).Set(newValue(rSlice.Index(0).Interface()))
+		return rSlice
 	}
-	return rv
+	return reflect.Zero(rt)
 }

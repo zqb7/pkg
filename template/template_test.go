@@ -10,7 +10,17 @@ type TestObj struct {
 	B string
 	C *int
 	D *string
+	E []int
 	// Self *TestObj
+}
+
+type TestObj2 struct {
+	a *int
+	A *int
+	B struct {
+		A2 []int
+		A3 []*int
+	}
 }
 
 func TestGen(t *testing.T) {
@@ -24,8 +34,16 @@ func TestGen(t *testing.T) {
 	}{
 		{name: "1", args: args{t: []int{}, wont: []int{0}}},
 		{name: "2", args: args{t: []*int{}, wont: []*int{new(int)}}},
-		{name: "3", args: args{t: &TestObj{}, wont: &TestObj{A: 0, B: "", C: new(int), D: new(string)}}},
-		{name: "4", args: args{t: TestObj{}, wont: TestObj{A: 0, B: "", C: new(int), D: new(string)}}},
+		{name: "3", args: args{t: &TestObj{}, wont: &TestObj{A: 0, B: "", C: new(int), D: new(string), E: []int{0}}}},
+		{name: "4", args: args{t: TestObj{}, wont: TestObj{A: 0, B: "", C: new(int), D: new(string), E: []int{0}}}},
+		{name: "5", args: args{t: TestObj2{}, wont: TestObj2{A: new(int), B: struct {
+			A2 []int
+			A3 []*int
+		}{A2: []int{0}, A3: []*int{new(int)}}}}},
+		{name: "6", args: args{t: &TestObj2{}, wont: TestObj2{A: new(int), B: struct {
+			A2 []int
+			A3 []*int
+		}{A2: []int{0}, A3: []*int{new(int)}}}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
