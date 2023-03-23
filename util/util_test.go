@@ -8,8 +8,8 @@ import (
 func TestInterfaceTypePtr(t *testing.T) {
 	tests := []struct {
 		name string
-		args interface{}
-		want interface{}
+		args any
+		want any
 	}{
 		{args: struct{}{}, want: &struct{}{}},
 		{args: struct{ A int }{A: 1}, want: &struct{ A int }{A: 1}},

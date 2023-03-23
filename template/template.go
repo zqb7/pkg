@@ -4,14 +4,14 @@ import (
 	"reflect"
 )
 
-func Gen(t interface{}) (result interface{}) {
+func Gen(t any) (result any) {
 	return newValue(t).Interface()
 }
 
-func newValue(obj interface{}) reflect.Value {
+func newValue(obj any) reflect.Value {
 	rt := reflect.TypeOf(obj)
 	switch rt.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		switch rt.Elem().Kind() {
 		case reflect.Struct:
 			return newValue(reflect.Indirect(reflect.New(rt.Elem())).Interface())
