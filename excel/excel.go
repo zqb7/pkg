@@ -18,49 +18,51 @@ type Scaner interface {
 	Scan(s string) error
 }
 
-func Read(rows *excelize.Rows, template any, beginAt int) ([]any, error) {
-	rt := reflect.TypeOf(template)
-	if rt.Kind() != reflect.Struct {
-		return nil, TemplateErr
-	}
-	type columnFieldInfo struct {
-		Index   int // 结构体字段的index
-		ColName string
-	}
-	columeM := map[int]columnFieldInfo{} // key=colIndex
-	result := make([]any, 0, 0)
-	for index := 0; rows.Next(); index++ {
-		if index < beginAt {
-			continue
-		}
-		columns, err := rows.Columns()
-		if err != nil {
-			return nil, err
-		} else if len(columns) == 0 {
-			continue
-		}
-		if index == beginAt {
-			rv := reflect.ValueOf(reflect.New(rt).Interface()).Elem()
-			for fieldIndex := 0; fieldIndex < rv.NumField(); fieldIndex++ {
-				field := rv.Field(fieldIndex)
-				if !field.CanSet() {
-					continue
-				}
-				for colIndex := 0; colIndex < len(columns); colIndex++ {
-					tag := rt.Field(fieldIndex).Tag.Get("col")
-					if tag == "-" {
-						continue
-					} else if tag == "" {
-						tag = rt.Field(fieldIndex).Name
-					}
-					if strings.EqualFold(columns[colIndex], tag) {
-						columeM[colIndex] = columnFieldInfo{Index: fieldIndex, ColName: tag}
+type TemplateFieldInfo struct {
+	Index   int // 结构体字段的index
+	ColName string
+}
+
+// columeM k=第几列的索引
+type GetFieldInfo func(rows *excelize.Rows, kv map[string]int) (columeM map[int]TemplateFieldInfo, err error)
+
+// endAt 读取到第几行截至，kv：k=结构体字段名,v=对应的索引下标
+func SimpleGetFieldInfo(endAt int) func(rows *excelize.Rows, kv map[string]int) (columeM map[int]TemplateFieldInfo, err error) {
+	return func(rows *excelize.Rows, kv map[string]int) (columeM map[int]TemplateFieldInfo, err error) {
+		columeM = map[int]TemplateFieldInfo{}
+		for index := 0; index < endAt && rows.Next(); index++ {
+			columns, err := rows.Columns()
+			if err != nil {
+				return nil, err
+			}
+			for colIndex := 0; colIndex < len(columns); colIndex++ {
+				for name, fieldIndex := range kv {
+					if strings.EqualFold(columns[colIndex], name) {
+						columeM[colIndex] = TemplateFieldInfo{Index: fieldIndex, ColName: name}
+						break
 					}
 				}
 			}
 		}
+		return columeM, nil
+	}
+}
 
-		if index <= beginAt {
+func Read(rows *excelize.Rows, template any, getField GetFieldInfo) ([]any, error) {
+	rt := reflect.TypeOf(template)
+	if rt.Kind() != reflect.Struct {
+		return nil, TemplateErr
+	}
+	columeM, err := getField(rows, fieldNameIndex(template))
+	if err != nil {
+		return nil, err
+	}
+	result := make([]any, 0, 0)
+	for index := 0; rows.Next(); index++ {
+		columns, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		} else if len(columns) == 0 {
 			continue
 		}
 		if len(columeM) < len(columns) {
@@ -71,6 +73,9 @@ func Read(rows *excelize.Rows, template any, beginAt int) ([]any, error) {
 		for colIndex, col := range columeM {
 			colValue := columns[colIndex]
 			field := rv.Field(col.Index)
+			if !field.CanSet() {
+				continue
+			}
 			var parseErr error
 			switch {
 			case reflect.PointerTo(field.Type()).Implements(reflect.TypeOf((*Scaner)(nil)).Elem()):
@@ -101,4 +106,20 @@ func Read(rows *excelize.Rows, template any, beginAt int) ([]any, error) {
 		result = append(result, obj)
 	}
 	return result, nil
+}
+
+// 获取结构体字段的名字以及对应的下标
+func fieldNameIndex(template any) map[string]int {
+	rt := reflect.TypeOf(template)
+	kv := make(map[string]int, rt.NumField())
+	for fieldIndex := 0; fieldIndex < rt.NumField(); fieldIndex++ {
+		tag := rt.Field(fieldIndex).Tag.Get("col")
+		if tag == "-" {
+			continue
+		} else if tag == "" {
+			tag = rt.Field(fieldIndex).Name
+		}
+		kv[tag] = fieldIndex
+	}
+	return kv
 }
