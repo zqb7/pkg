@@ -14,6 +14,10 @@ var (
 	ColFieldMisalignmentErr = errors.New("field misalignment")
 )
 
+type Scaner interface {
+	Scan(s string) error
+}
+
 func Read(rows *excelize.Rows, template any, beginAt int) ([]any, error) {
 	rt := reflect.TypeOf(template)
 	if rt.Kind() != reflect.Struct {
@@ -69,6 +73,8 @@ func Read(rows *excelize.Rows, template any, beginAt int) ([]any, error) {
 			field := rv.Field(col.Index)
 			var parseErr error
 			switch {
+			case reflect.PointerTo(field.Type()).Implements(reflect.TypeOf((*Scaner)(nil)).Elem()):
+				parseErr = field.Addr().Interface().(Scaner).Scan(colValue)
 			case field.CanUint():
 				var uv uint64
 				uv, parseErr = strconv.ParseUint(colValue, 10, 64)
