@@ -65,7 +65,7 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 		} else if len(columns) == 0 {
 			continue
 		}
-		if len(columeM) < len(columns) {
+		if len(columns) < len(columeM) {
 			return nil, ColFieldMisalignmentErr
 		}
 		obj := reflect.New(rt).Interface()
