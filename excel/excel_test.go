@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-
-	"github.com/xuri/excelize/v2"
 )
 
 type MyInt int32
@@ -24,7 +22,7 @@ type Item struct {
 }
 
 func TestRead(t *testing.T) {
-	f, err := excelize.OpenFile("test.xlsx")
+	f, err := OpenFile("test.xlsx")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +45,7 @@ func TestRead(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			result, err := Read(itemRows, Item{}, SimpleGetFieldInfo(2))
+			result, err := Read(itemRows, Item{}, SimpleColNameIndex(2))
 			if err != nil {
 				t.Fatal(err)
 			}

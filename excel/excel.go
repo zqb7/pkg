@@ -14,49 +14,49 @@ var (
 	ColFieldMisalignmentErr = errors.New("field misalignment")
 )
 
+func OpenFile(filename string) (file *excelize.File, err error) {
+	return excelize.OpenFile(filename)
+}
+
 type Scaner interface {
 	Scan(s string) error
 }
 
-type TemplateFieldInfo struct {
+type templateFieldInfo struct {
 	Index   int // 结构体字段的index
 	ColName string
 }
 
-// columeM k=第几列的索引
-type GetFieldInfo func(rows *excelize.Rows, kv map[string]int) (columeM map[int]TemplateFieldInfo, err error)
+// colNames:key=第几列的字段名,value=该字段对应的第几列的索引
+type ColNameIndex func(rows *excelize.Rows) (colNames map[string]int, err error)
 
-// endAt 读取到第几行截至，kv：k=结构体字段名,v=对应的索引下标
-func SimpleGetFieldInfo(endAt int) func(rows *excelize.Rows, kv map[string]int) (columeM map[int]TemplateFieldInfo, err error) {
-	return func(rows *excelize.Rows, kv map[string]int) (columeM map[int]TemplateFieldInfo, err error) {
-		columeM = map[int]TemplateFieldInfo{}
+// endAt 读取到第几行截至
+func SimpleColNameIndex(endAt int) ColNameIndex {
+	return func(rows *excelize.Rows) (colNames map[string]int, err error) {
+		colNames = map[string]int{}
 		for index := 0; index < endAt && rows.Next(); index++ {
 			columns, err := rows.Columns()
 			if err != nil {
 				return nil, err
 			}
 			for colIndex := 0; colIndex < len(columns); colIndex++ {
-				for name, fieldIndex := range kv {
-					if strings.EqualFold(columns[colIndex], name) {
-						columeM[colIndex] = TemplateFieldInfo{Index: fieldIndex, ColName: name}
-						break
-					}
-				}
+				colNames[columns[colIndex]] = colIndex
 			}
 		}
-		return columeM, nil
+		return colNames, nil
 	}
 }
 
-func Read(rows *excelize.Rows, template any, getField GetFieldInfo) ([]any, error) {
+func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 	rt := reflect.TypeOf(template)
 	if rt.Kind() != reflect.Struct {
 		return nil, TemplateErr
 	}
-	columeM, err := getField(rows, fieldNameIndex(template))
+	colNames, err := f(rows)
 	if err != nil {
 		return nil, err
 	}
+	columeM := toFieldInfo(template, colNames)
 	result := make([]any, 0, 0)
 	for index := 0; rows.Next(); index++ {
 		columns, err := rows.Columns()
@@ -122,4 +122,19 @@ func fieldNameIndex(template any) map[string]int {
 		kv[tag] = fieldIndex
 	}
 	return kv
+}
+
+// 根据给的结构体，以及表格中字段名以及对应的第几列的下标，生成 columeM k=表格的第几列的下标 v=对应的结构体的相关数据
+func toFieldInfo(template any, colNames map[string]int) (columeM map[int]templateFieldInfo) {
+	columeM = map[int]templateFieldInfo{}
+	kv := fieldNameIndex(template)
+	for colName, colIndex := range colNames {
+		for name, fieldIndex := range kv {
+			if strings.EqualFold(colName, name) {
+				columeM[colIndex] = templateFieldInfo{Index: fieldIndex, ColName: name}
+				break
+			}
+		}
+	}
+	return columeM
 }
