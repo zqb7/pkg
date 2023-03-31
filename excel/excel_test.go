@@ -19,6 +19,8 @@ type Item struct {
 	Name   string
 	Price  float64
 	Price2 MyInt
+	Price3 []uint32
+	Price4 [2]float64
 }
 
 func TestRead(t *testing.T) {
@@ -34,9 +36,9 @@ func TestRead(t *testing.T) {
 	}{
 		{
 			Sheet: "Item", Template: Item{}, want: []any{
-				&Item{Id: 1, Name: "test1", Price: 0.01, Price2: 3},
-				&Item{Id: 2, Name: "test2", Price: 10, Price2: 4},
-				&Item{Id: 3, Name: "test3", Price: 9.9, Price2: 5},
+				&Item{Id: 1, Name: "test1", Price: 0.01, Price2: 3, Price3: []uint32{2, 3, 4}, Price4: [2]float64{7, 0}},
+				&Item{Id: 2, Name: "test2", Price: 10, Price2: 4, Price3: []uint32{5, 6, 7}, Price4: [2]float64{0.01, 0.9999}},
+				&Item{Id: 3, Name: "test3", Price: 9.9, Price2: 5, Price3: nil, Price4: [2]float64{3.1415, 0}},
 			},
 		},
 	}
