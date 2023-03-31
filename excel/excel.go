@@ -19,7 +19,7 @@ func OpenFile(filename string) (file *excelize.File, err error) {
 }
 
 type Scaner interface {
-	Scan(s string) error
+	Scan(value any) error
 }
 
 type templateFieldInfo struct {
@@ -98,7 +98,12 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 				var uv bool
 				strconv.ParseBool(colValue)
 				field.SetBool(uv)
+			case field.Kind() == reflect.Array:
+				parseErr = arrayDecode(field, colValue)
+			case field.Kind() == reflect.Slice:
+				parseErr = sliceDecode(field, colValue)
 			}
+
 			if parseErr != nil {
 				return nil, parseErr
 			}
@@ -138,3 +143,5 @@ func toFieldInfo(template any, colNames map[string]int) (columeM map[int]templat
 	}
 	return columeM
 }
+
+type SliceNumber[T int | float32 | float64 | uint32] []T

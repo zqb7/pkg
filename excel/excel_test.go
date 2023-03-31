@@ -8,8 +8,8 @@ import (
 
 type MyInt int32
 
-func (m *MyInt) Scan(s string) error {
-	v, err := strconv.ParseInt(s, 10, 64)
+func (m *MyInt) Scan(value any) error {
+	v, err := strconv.ParseInt(value.(string), 10, 64)
 	*m = MyInt(v)
 	return err
 }
@@ -36,7 +36,8 @@ func TestRead(t *testing.T) {
 			Sheet: "Item", Template: Item{}, want: []any{
 				&Item{Id: 1, Name: "test1", Price: 0.01, Price2: 3},
 				&Item{Id: 2, Name: "test2", Price: 10, Price2: 4},
-				&Item{Id: 3, Name: "test3", Price: 9.9, Price2: 5}},
+				&Item{Id: 3, Name: "test3", Price: 9.9, Price2: 5},
+			},
 		},
 	}
 	for _, tt := range tests {
