@@ -143,5 +143,3 @@ func toFieldInfo(template any, colNames map[string]int) (columeM map[int]templat
 	}
 	return columeM
 }
-
-type SliceNumber[T int | float32 | float64 | uint32] []T

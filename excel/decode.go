@@ -49,6 +49,11 @@ func sliceDecode(rv reflect.Value, str string) error {
 	case []float64:
 		err = json.Unmarshal([]byte(str), &v)
 		rv.Set(reflect.AppendSlice(rv, reflect.ValueOf(v)))
+
+	case []string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.AppendSlice(rv, reflect.ValueOf(v)))
+
 	default:
 		return UnsupportypeErr
 	}
@@ -427,6 +432,37 @@ func arrayDecode(rv reflect.Value, str string) error {
 		err = json.Unmarshal([]byte(str), &v)
 		rv.Set(reflect.ValueOf(v))
 	case [10]float64:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+
+	case [1]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [2]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [3]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [4]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [5]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [6]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [7]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [8]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [9]string:
+		err = json.Unmarshal([]byte(str), &v)
+		rv.Set(reflect.ValueOf(v))
+	case [10]string:
 		err = json.Unmarshal([]byte(str), &v)
 		rv.Set(reflect.ValueOf(v))
 
