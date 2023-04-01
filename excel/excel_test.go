@@ -23,6 +23,14 @@ type Item struct {
 	Price4 [2]float64
 }
 
+type TestDecode struct {
+	Id     uint32
+	Slice1 [][]uint
+	Slice2 [][]int32
+	Arr1   [2]uint8
+	Arr2   [2]int8
+}
+
 func TestRead(t *testing.T) {
 	f, err := OpenFile("test.xlsx")
 	if err != nil {
@@ -41,6 +49,11 @@ func TestRead(t *testing.T) {
 				&Item{Id: 3, Name: "test3", Price: 9.9, Price2: 5, Price3: nil, Price4: [2]float64{3.1415, 0}},
 			},
 		},
+		{
+			Sheet: "TestDecode", Template: TestDecode{}, want: []any{
+				&TestDecode{Id: 1, Slice1: [][]uint{{1, 2, 3}, {4, 5, 6}}, Slice2: [][]int32{{-1, -2, -3}, {-4, -5, -6}}, Arr1: [2]uint8{1, 2}, Arr2: [2]int8{-1, -2}},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Sheet, func(t *testing.T) {
@@ -48,7 +61,7 @@ func TestRead(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			result, err := Read(itemRows, Item{}, SimpleColNameIndex(2))
+			result, err := Read(itemRows, tt.Template, SimpleColNameIndex(2))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -12,6 +12,7 @@ import (
 var (
 	TemplateErr             = errors.New("template must be struct")
 	ColFieldMisalignmentErr = errors.New("field misalignment")
+	UnsupportypeErr         = errors.New("unsupported type")
 )
 
 func OpenFile(filename string) (file *excelize.File, err error) {
