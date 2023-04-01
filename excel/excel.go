@@ -103,6 +103,8 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 				parseErr = arrayDecode(field, colValue)
 			case field.Kind() == reflect.Slice:
 				parseErr = sliceDecode(field, colValue)
+			case field.Kind() == reflect.Map:
+				parseErr = mapDecode(field, colValue)
 			}
 
 			if parseErr != nil {

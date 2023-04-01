@@ -12,17 +12,28 @@ import (
 	"time"
 )
 
+var BaseType = []string{"uint8", "uint16", "uint32", "uint64", "uint", "int8", "int16", "int32", "int64", "int", "float32", "float64", "string"}
+
 var SliceBaseTypes = func() (result []string) {
-	for _, item1 := range []string{"uint8", "uint16", "uint32", "uint64", "uint", "int8", "int16", "int32", "int64", "int", "float32", "float64"} {
+	for _, item1 := range BaseType {
 		result = append(result, "[]"+item1, "[][]"+item1)
 	}
 	return
 }()
 
 var ArrayBaseTypes = func() (result []string) {
-	for _, item1 := range []string{"uint8", "uint16", "uint32", "uint64", "uint", "int8", "int16", "int32", "int64", "int", "float32", "float64"} {
-		for index := 0; index <= 100; index++ {
+	for _, item1 := range BaseType {
+		for index := 0; index <= 10; index++ {
 			result = append(result, fmt.Sprintf("[%d]%s", index, item1))
+		}
+	}
+	return
+}()
+
+var MapBaseTypes = func() (result []string) {
+	for _, item1 := range BaseType {
+		for _, item2 := range BaseType {
+			result = append(result, fmt.Sprintf("map[%s]%s", item1, item2), fmt.Sprintf("map[%s][]%s", item1, item2))
 		}
 	}
 	return
@@ -32,6 +43,7 @@ type Data struct {
 	GenerateAt    time.Time
 	SliceBaseType []string
 	ArrayBaseType []string
+	MapBaseType   []string
 }
 
 func main() {
@@ -40,6 +52,7 @@ func main() {
 		GenerateAt:    time.Now(),
 		SliceBaseType: SliceBaseTypes,
 		ArrayBaseType: ArrayBaseTypes,
+		MapBaseType:   MapBaseTypes,
 	}
 	var (
 		err        error
@@ -54,7 +67,7 @@ func main() {
 		return
 	}
 	defer stdFile.Close()
-	tpl, err = template.New("decode").Parse(tplCommon + tplSliceDecode + tplArrayDeocde)
+	tpl, err = template.New("decode").Parse(tplCommon + tplSliceDecode + tplArrayDeocde + tplMapDeocde)
 	err = tpl.Execute(&buff, data)
 	if err != nil {
 		fmt.Println(err)
@@ -96,6 +109,20 @@ var tplArrayDeocde = `
 func arrayDecode(rv reflect.Value, str string) error {
 	var err error
 	switch v := rv.Interface().(type) { {{range .ArrayBaseType}}
+			case {{.}}:
+				err = json.Unmarshal([]byte(str), &v)
+				rv.Set(reflect.ValueOf(v)) {{end}}
+	default:
+		return UnsupportypeErr
+	}
+	return err
+}
+`
+
+var tplMapDeocde = `
+func mapDecode(rv reflect.Value, str string) error {
+	var err error
+	switch v := rv.Interface().(type) { {{range .MapBaseType}}
 			case {{.}}:
 				err = json.Unmarshal([]byte(str), &v)
 				rv.Set(reflect.ValueOf(v)) {{end}}

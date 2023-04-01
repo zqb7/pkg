@@ -31,6 +31,14 @@ type TestDecode struct {
 	Arr2   [2]int8
 }
 
+type TestMapDocode struct {
+	Data1 map[int]int
+	Data2 map[string]string
+	Data3 map[string]float64
+	Data4 map[string][]string
+	Data5 map[string][]int
+}
+
 func TestRead(t *testing.T) {
 	f, err := OpenFile("test.xlsx")
 	if err != nil {
@@ -52,6 +60,12 @@ func TestRead(t *testing.T) {
 		{
 			Sheet: "TestDecode", Template: TestDecode{}, want: []any{
 				&TestDecode{Id: 1, Slice1: [][]uint{{1, 2, 3}, {4, 5, 6}}, Slice2: [][]int32{{-1, -2, -3}, {-4, -5, -6}}, Arr1: [2]uint8{1, 2}, Arr2: [2]int8{-1, -2}},
+			},
+		},
+		{
+			Sheet: "TestMapDecode", Template: TestMapDocode{}, want: []any{
+				&TestMapDocode{Data1: map[int]int{1: 2}, Data2: map[string]string{"a": "b"}, Data3: map[string]float64{"a": 0.999}, Data4: map[string][]string{"a": {"b1", "b2"}},
+					Data5: map[string][]int{"a": {1, 2}}},
 			},
 		},
 	}
