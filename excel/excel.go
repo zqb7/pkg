@@ -31,6 +31,11 @@ type templateFieldInfo struct {
 // colNames:key=第几列的字段名,value=该字段对应的第几列的索引
 type ColNameIndex func(rows *excelize.Rows) (colNames map[string]int, err error)
 
+// breakOff:当为true时，表明对该字段的解析结束了(无论成功与否)
+type Decoder func(rv reflect.Value, colValue string) (breakOff bool, err error)
+
+var decoders = make([]Decoder, 0, 32)
+
 // endAt 读取到第几行截至
 func SimpleColNameIndex(endAt int) ColNameIndex {
 	return func(rows *excelize.Rows) (colNames map[string]int, err error) {
@@ -71,6 +76,7 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 		}
 		obj := reflect.New(rt).Interface()
 		rv := reflect.ValueOf(obj).Elem()
+	walk:
 		for colIndex, col := range columeM {
 			colValue := columns[colIndex]
 			field := rv.Field(col.Index)
@@ -78,6 +84,17 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 				continue
 			}
 			var parseErr error
+			var breakOff bool
+			for _, f := range decoders {
+				breakOff, parseErr = f(field, colValue)
+				if breakOff {
+					continue walk
+				}
+				if parseErr != nil {
+					return nil, parseErr
+				}
+			}
+
 			switch {
 			case reflect.PointerTo(field.Type()).Implements(reflect.TypeOf((*Scaner)(nil)).Elem()):
 				parseErr = field.Addr().Interface().(Scaner).Scan(colValue)
@@ -145,4 +162,9 @@ func toFieldInfo(template any, colNames map[string]int) (columeM map[int]templat
 		}
 	}
 	return columeM
+}
+
+// 注册自定义的解析器
+func RegisterDecoder(funs ...Decoder) {
+	decoders = append(decoders, funs...)
 }

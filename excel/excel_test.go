@@ -1,6 +1,7 @@
 package excel
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
@@ -23,12 +24,19 @@ type Item struct {
 	Price4 [2]float64
 }
 
+type Goods struct {
+	Id     uint32
+	Name   string
+	Prices float64
+}
+
 type TestDecode struct {
 	Id     uint32
 	Slice1 [][]uint
 	Slice2 [][]int32
 	Arr1   [2]uint8
 	Arr2   [2]int8
+	Goods  Goods
 }
 
 type TestMapDocode struct {
@@ -59,7 +67,7 @@ func TestRead(t *testing.T) {
 		},
 		{
 			Sheet: "TestDecode", Template: TestDecode{}, want: []any{
-				&TestDecode{Id: 1, Slice1: [][]uint{{1, 2, 3}, {4, 5, 6}}, Slice2: [][]int32{{-1, -2, -3}, {-4, -5, -6}}, Arr1: [2]uint8{1, 2}, Arr2: [2]int8{-1, -2}},
+				&TestDecode{Id: 1, Slice1: [][]uint{{1, 2, 3}, {4, 5, 6}}, Slice2: [][]int32{{-1, -2, -3}, {-4, -5, -6}}, Arr1: [2]uint8{1, 2}, Arr2: [2]int8{-1, -2}, Goods: Goods{Id: 1, Name: "Code", Prices: 9.9}},
 			},
 		},
 		{
@@ -69,6 +77,15 @@ func TestRead(t *testing.T) {
 			},
 		},
 	}
+	RegisterDecoder(func(rv reflect.Value, colValue string) (breakOff bool, err error) {
+		switch v := rv.Interface().(type) {
+		case Goods:
+			err = json.Unmarshal([]byte(colValue), &v)
+			rv.Set(reflect.ValueOf(v))
+			return true, err
+		}
+		return false, err
+	})
 	for _, tt := range tests {
 		t.Run(tt.Sheet, func(t *testing.T) {
 			itemRows, err := f.Rows(tt.Sheet)
