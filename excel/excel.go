@@ -55,16 +55,7 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 	if rt.Kind() != reflect.Struct {
 		return nil, TemplateErr
 	}
-	endAt, callback := f()
-	var rowsSlice [][]string
-	for index := 0; index < endAt && rows.Next(); index++ {
-		columns, err := rows.Columns()
-		if err != nil {
-			return nil, err
-		}
-		rowsSlice = append(rowsSlice, columns)
-	}
-	colNames, err := callback(rowsSlice)
+	colNames, err := getColNames(rows, f)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +131,25 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 	return result, nil
 }
 
+func GetRows(rows *excelize.Rows, f ColNameIndex) ([][]string, error) {
+	var result [][]string
+	colNames, err := getColNames(rows, f)
+	if err != nil {
+		return nil, err
+	}
+	for index := 0; rows.Next(); index++ {
+		columns, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+		if sub := len(colNames) - len(columns); sub > 0 {
+			columns = append(columns, make([]string, sub)...)
+		}
+		result = append(result, columns)
+	}
+	return result, nil
+}
+
 // 获取结构体字段的名字以及对应的下标
 func fieldNameIndex(template any) map[string]int {
 	rt := reflect.TypeOf(template)
@@ -169,6 +179,21 @@ func toFieldInfo(template any, colNames map[string]int) (columeM map[int]templat
 		}
 	}
 	return columeM
+}
+
+// colNames k=表格的列名，v=表示第几列的下标
+func getColNames(rows *excelize.Rows, f ColNameIndex) (colNames map[string]int, err error) {
+	endAt, callback := f()
+	var rowsSlice [][]string
+	for index := 0; index < endAt && rows.Next(); index++ {
+		columns, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+		rowsSlice = append(rowsSlice, columns)
+	}
+	colNames, err = callback(rowsSlice)
+	return colNames, err
 }
 
 // 注册自定义的解析器

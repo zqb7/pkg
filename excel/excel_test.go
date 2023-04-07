@@ -121,3 +121,42 @@ func TestRead(t *testing.T) {
 	}
 
 }
+
+func TestGetRows(t *testing.T) {
+	f, err := OpenFile("test.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		Sheet string
+		want  [][]string
+	}{
+		{
+			Sheet: "TestKV", want: [][]string{
+				{"1", "v1"},
+				{"2", ""},
+				{"3", ""},
+				{"k4", "4"},
+				{"", "5"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Sheet, func(t *testing.T) {
+			itemRows, err := f.Rows(tt.Sheet)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := GetRows(itemRows, SimpleColNameIndex())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(tt.want) != len(got) {
+				t.Fatalf("want len:%d, got len:%d", len(tt.want), len(got))
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want:%+v got:%+v", tt.want, got)
+			}
+		})
+	}
+}
