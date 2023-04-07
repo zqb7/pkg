@@ -105,7 +105,7 @@ func TestRead(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			result, err := Read(itemRows, tt.Template, SimpleColNameIndex(2))
+			result, err := Read(itemRows, tt.Template, SimpleColNameIndex())
 			if err != nil {
 				t.Fatal(err)
 			}

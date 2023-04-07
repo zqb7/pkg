@@ -28,28 +28,25 @@ type templateFieldInfo struct {
 	ColName string
 }
 
-// colNames:key=第几列的字段名,value=该字段对应的第几列的索引
-type ColNameIndex func(rows *excelize.Rows) (colNames map[string]int, err error)
+// endAt:截止读取到(含)第几行(1为第一行开始) colNames:key=第几列的字段名,value=该字段对应的第几列的索引
+type ColNameIndex func() (endAt int, callback func(rows [][]string) (colNames map[string]int, err error))
 
 // breakOff:当为true时，表明对该字段的解析结束了(无论成功与否)
 type Decoder func(rv reflect.Value, colValue string) (breakOff bool, err error)
 
 var decoders = make([]Decoder, 0, 32)
 
-// endAt 读取到第几行截至
-func SimpleColNameIndex(endAt int) ColNameIndex {
-	return func(rows *excelize.Rows) (colNames map[string]int, err error) {
-		colNames = map[string]int{}
-		for index := 0; index < endAt && rows.Next(); index++ {
-			columns, err := rows.Columns()
-			if err != nil {
-				return nil, err
+func SimpleColNameIndex() ColNameIndex {
+	return func() (endAt int, callback func(rows [][]string) (colNames map[string]int, err error)) {
+		return 2, func(rows [][]string) (colNames map[string]int, err error) {
+			colNames = map[string]int{}
+			for _, row := range rows {
+				for colIndex, colValue := range row {
+					colNames[colValue] = colIndex
+				}
 			}
-			for colIndex := 0; colIndex < len(columns); colIndex++ {
-				colNames[columns[colIndex]] = colIndex
-			}
+			return colNames, nil
 		}
-		return colNames, nil
 	}
 }
 
@@ -58,7 +55,16 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 	if rt.Kind() != reflect.Struct {
 		return nil, TemplateErr
 	}
-	colNames, err := f(rows)
+	endAt, callback := f()
+	var rowsSlice [][]string
+	for index := 0; index < endAt && rows.Next(); index++ {
+		columns, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+		rowsSlice = append(rowsSlice, columns)
+	}
+	colNames, err := callback(rowsSlice)
 	if err != nil {
 		return nil, err
 	}
