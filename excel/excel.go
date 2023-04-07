@@ -71,14 +71,15 @@ func Read(rows *excelize.Rows, template any, f ColNameIndex) ([]any, error) {
 		} else if len(columns) == 0 {
 			continue
 		}
-		if len(columns) < len(columeM) {
-			return nil, ColFieldMisalignmentErr
-		}
 		obj := reflect.New(rt).Interface()
 		rv := reflect.ValueOf(obj).Elem()
 	walk:
 		for colIndex, col := range columeM {
-			colValue := columns[colIndex]
+			var colValue string
+			if colIndex < len(columns) {
+				colValue = columns[colIndex]
+			}
+
 			field := rv.Field(col.Index)
 			if !field.CanSet() {
 				continue

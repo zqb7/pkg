@@ -47,6 +47,10 @@ type TestMapDocode struct {
 	Data5 map[string][]int
 }
 
+type TestKV struct {
+	Key, Value string
+}
+
 func TestRead(t *testing.T) {
 	f, err := OpenFile("test.xlsx")
 	if err != nil {
@@ -74,6 +78,15 @@ func TestRead(t *testing.T) {
 			Sheet: "TestMapDecode", Template: TestMapDocode{}, want: []any{
 				&TestMapDocode{Data1: map[int]int{1: 2}, Data2: map[string]string{"a": "b"}, Data3: map[string]float64{"a": 0.999}, Data4: map[string][]string{"a": {"b1", "b2"}},
 					Data5: map[string][]int{"a": {1, 2}}},
+			},
+		},
+		{
+			Sheet: "TestKV", Template: TestKV{}, want: []any{
+				&TestKV{Key: "1", Value: "v1"},
+				&TestKV{Key: "2", Value: ""},
+				&TestKV{Key: "3", Value: ""},
+				&TestKV{Key: "k4", Value: "4"},
+				&TestKV{Key: "", Value: "5"},
 			},
 		},
 	}
