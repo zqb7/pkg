@@ -51,6 +51,39 @@ type TestKV struct {
 	Key, Value string
 }
 
+type TestSkip struct {
+	A, B, C, D, E, F string
+}
+
+func testSkipColNames() ColNameIndex {
+	return func() (endAt int, callback func(rows [][]string) (colNames map[string]int, err error)) {
+		return 3, func(rows [][]string) (colNames map[string]int, err error) {
+			var r2, r3 []string
+			for index, row := range rows {
+				if index == 1 {
+					r2 = row
+				} else if index == 2 {
+					r3 = row
+				}
+			}
+			colNames = make(map[string]int, len(r2))
+		walk:
+			for colIndex, colValue := range r2 {
+				if colValue == "" {
+					continue
+				}
+				for colIndex2, v := range r3 {
+					if colIndex2 == colIndex && v == "skip" {
+						continue walk
+					}
+				}
+				colNames[colValue] = colIndex
+			}
+			return colNames, nil
+		}
+	}
+}
+
 func TestRead(t *testing.T) {
 	f, err := OpenFile("test.xlsx")
 	if err != nil {
@@ -61,24 +94,25 @@ func TestRead(t *testing.T) {
 		Sheet    string
 		Template any
 		want     []any
+		f        ColNameIndex
 	}{
 		{
 			Sheet: "Item", Template: Item{}, want: []any{
 				&Item{Id: 1, Name: "test1", Price: 0.01, Price2: 3, Price3: []uint32{2, 3, 4}, Price4: [2]float64{7, 0}},
 				&Item{Id: 2, Name: "test2", Price: 10, Price2: 4, Price3: []uint32{5, 6, 7}, Price4: [2]float64{0.01, 0.9999}},
 				&Item{Id: 3, Name: "test3", Price: 9.9, Price2: 5, Price3: nil, Price4: [2]float64{3.1415, 0}},
-			},
+			}, f: SimpleColNameIndex(),
 		},
 		{
 			Sheet: "TestDecode", Template: TestDecode{}, want: []any{
 				&TestDecode{Id: 1, Slice1: [][]uint{{1, 2, 3}, {4, 5, 6}}, Slice2: [][]int32{{-1, -2, -3}, {-4, -5, -6}}, Arr1: [2]uint8{1, 2}, Arr2: [2]int8{-1, -2}, Goods: Goods{Id: 1, Name: "Code", Prices: 9.9}},
-			},
+			}, f: SimpleColNameIndex(),
 		},
 		{
 			Sheet: "TestMapDecode", Template: TestMapDocode{}, want: []any{
 				&TestMapDocode{Data1: map[int]int{1: 2}, Data2: map[string]string{"a": "b"}, Data3: map[string]float64{"a": 0.999}, Data4: map[string][]string{"a": {"b1", "b2"}},
 					Data5: map[string][]int{"a": {1, 2}}},
-			},
+			}, f: SimpleColNameIndex(),
 		},
 		{
 			Sheet: "TestKV", Template: TestKV{}, want: []any{
@@ -87,7 +121,12 @@ func TestRead(t *testing.T) {
 				&TestKV{Key: "3", Value: ""},
 				&TestKV{Key: "k4", Value: "4"},
 				&TestKV{Key: "", Value: "5"},
-			},
+			}, f: SimpleColNameIndex(),
+		},
+		{
+			Sheet: "TestSkip", Template: TestSkip{}, want: []any{
+				&TestSkip{A: "a", B: "b", C: "c", D: "d", E: "", F: "f"},
+			}, f: testSkipColNames(),
 		},
 	}
 	RegisterDecoder(func(rv reflect.Value, colValue string) (breakOff bool, err error) {
@@ -105,7 +144,7 @@ func TestRead(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			result, err := Read(itemRows, tt.Template, SimpleColNameIndex())
+			result, err := Read(itemRows, tt.Template, tt.f)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -130,6 +169,7 @@ func TestGetRows(t *testing.T) {
 	tests := []struct {
 		Sheet string
 		want  [][]string
+		f     ColNameIndex
 	}{
 		{
 			Sheet: "TestKV", want: [][]string{
@@ -138,7 +178,12 @@ func TestGetRows(t *testing.T) {
 				{"3", ""},
 				{"k4", "4"},
 				{"", "5"},
-			},
+			}, f: SimpleColNameIndex(),
+		},
+		{
+			Sheet: "TestSkip", want: [][]string{
+				{"a", "b", "c", "d", "f"},
+			}, f: testSkipColNames(),
 		},
 	}
 	for _, tt := range tests {
@@ -147,7 +192,7 @@ func TestGetRows(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := GetRows(itemRows, SimpleColNameIndex())
+			got, err := GetRows(itemRows, tt.f)
 			if err != nil {
 				t.Fatal(err)
 			}

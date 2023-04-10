@@ -3,6 +3,7 @@ package excel
 import (
 	"errors"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -137,15 +138,28 @@ func GetRows(rows *excelize.Rows, f ColNameIndex) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	var maxColIndex int
+	var colIndexs []int
+	for _, colIndex := range colNames {
+		if colIndex > maxColIndex {
+			maxColIndex = colIndex
+		}
+		colIndexs = append(colIndexs, colIndex)
+	}
+	sort.Ints(colIndexs)
 	for index := 0; rows.Next(); index++ {
 		columns, err := rows.Columns()
 		if err != nil {
 			return nil, err
 		}
-		if sub := len(colNames) - len(columns); sub > 0 {
+		if sub := maxColIndex + 1 - len(columns); sub > 0 {
 			columns = append(columns, make([]string, sub)...)
 		}
-		result = append(result, columns)
+		var r = make([]string, 0, maxColIndex)
+		for _, colIndex := range colIndexs {
+			r = append(r, columns[colIndex])
+		}
+		result = append(result, r)
 	}
 	return result, nil
 }
