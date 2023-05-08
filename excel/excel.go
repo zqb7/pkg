@@ -2,6 +2,7 @@ package excel
 
 import (
 	"errors"
+	"io"
 	"reflect"
 	"sort"
 	"strconv"
@@ -18,6 +19,10 @@ var (
 
 func OpenFile(filename string) (file *excelize.File, err error) {
 	return excelize.OpenFile(filename)
+}
+
+func OpenReader(r io.Reader) (file *excelize.File, err error) {
+	return excelize.OpenReader(r)
 }
 
 type Scaner interface {
