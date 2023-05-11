@@ -24,7 +24,7 @@ func newValue(obj any) reflect.Value {
 		elem := newRV.Elem()
 		for index := 0; index < elem.NumField(); index++ {
 			if field := elem.Field(index); field.CanSet() {
-				field.Set(newValue(field.Interface()))
+				fieldSet(field, newValue(field.Interface()))
 			}
 		}
 		return elem
@@ -36,4 +36,15 @@ func newValue(obj any) reflect.Value {
 		return rSlice
 	}
 	return reflect.Zero(rt)
+}
+
+func fieldSet(field, value reflect.Value) {
+	fieldKind := field.Type().Kind()
+	valueKind := value.Type().Kind()
+	switch {
+	case fieldKind == reflect.Pointer && valueKind == reflect.Struct:
+		field.Set(value.Addr())
+	default:
+		field.Set(value)
+	}
 }
