@@ -31,6 +31,13 @@ type TestObj3 struct {
 	Obj3 *Obj3
 }
 
+type Obj4 struct {
+	A *int
+}
+type TestObj4 struct {
+	Objs []*Obj4
+}
+
 func TestGen(t *testing.T) {
 	type args struct {
 		t    any
@@ -53,6 +60,7 @@ func TestGen(t *testing.T) {
 			A3 []*int
 		}{A2: []int{0}, A3: []*int{new(int)}}}}},
 		{name: "7", args: args{t: TestObj3{}, wont: TestObj3{Obj3: &Obj3{A: new(int), B: new(int)}}}},
+		{name: "8", args: args{t: TestObj4{}, wont: TestObj4{Objs: []*Obj4{{A: new(int)}}}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

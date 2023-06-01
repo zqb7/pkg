@@ -32,7 +32,7 @@ func newValue(obj any) reflect.Value {
 		return newValue(obj)
 	case reflect.Slice:
 		rSlice := reflect.MakeSlice(rt, 1, 1)
-		rSlice.Index(0).Set(newValue(rSlice.Index(0).Interface()))
+		fieldSet(rSlice.Index(0), newValue(rSlice.Index(0).Interface()))
 		return rSlice
 	}
 	return reflect.Zero(rt)
