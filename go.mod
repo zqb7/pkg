@@ -1,4 +1,4 @@
-module github.com/zqhhh/pkg
+module github.com/0look/pkg
 
 go 1.20
 
