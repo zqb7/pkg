@@ -1,4 +1,4 @@
-module github.com/0look/pkg
+module github.com/qilook/pkg
 
 go 1.20
 
